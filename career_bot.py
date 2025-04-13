@@ -113,7 +113,7 @@ def main():
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        webhook_url=webhook_url
+        webhook_url=os.environ.get("WEBHOOK_URL")
     )
 
 if __name__ == '__main__':
