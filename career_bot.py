@@ -1,91 +1,112 @@
+import os
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ConversationHandler
+)
 
-# Сюда вставь свой токен, который ты получишь у @BotFather
-TOKEN = '7777026419:AAGWA10hBPZilWmNK7HU4xCT_LSFbsA78zk'
+PORT = int(os.environ.get('PORT', '8443'))
+TOKEN = os.environ.get("BOT_TOKEN")  # токен нужно задать как переменную окружения
 
-# Состояния диалога
-START, QUESTION1, QUESTION2, QUESTION3, RESULT = range(5)
+# Этапы теста
+QUESTION1, QUESTION2, QUESTION3 = range(3)
 
-# Словарь для хранения результатов
-user_scores = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
+user_scores = {}
 
-# Функция старта
-def start(update: Update, context: CallbackContext) -> int:
-    user_scores.update({"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0})
-    update.message.reply_text(
-        "Привет! 🎯 Пройди наш тест, чтобы узнать, какая профессия тебе подходит!\n\nНачнем?"
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_scores[user_id] = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
+
+    await update.message.reply_text(
+        "Привет! 🎯 Пройди короткий тест, чтобы узнать, какая профессия тебе подходит!\n\n"
+        "Вопрос 1: Как проводишь свободное время?\n"
+        "1 — Читаю про здоровье\n"
+        "2 — Рисую или монтирую\n"
+        "3 — Думаю, как заработать\n"
+        "4 — Разбираюсь с техникой\n"
+        "5 — Общаюсь с людьми"
     )
     return QUESTION1
 
-# Вопросы
-def question1(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text("🔥 Как проводишь свободное время?\n1. Читаю про здоровье\n2. Рисую/монтирую\n3. Искать, как заработать\n4. Разбираю гаджеты\n5. Общаюсь с людьми")
+async def question1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    await update.message.reply_text(
+        "Вопрос 2: Любимый предмет в школе?\n"
+        "1 — Биология\n"
+        "2 — Литература / Искусство\n"
+        "3 — Экономика\n"
+        "4 — Информатика\n"
+        "5 — Обществознание"
+    )
     return QUESTION2
 
-def question2(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text("💡 Твой любимый школьный предмет?\n1. Биология\n2. Литература/ИЗО\n3. Экономика\n4. Информатика\n5. Психология")
+async def question2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    await update.message.reply_text(
+        "Вопрос 3: Что важнее в профессии?\n"
+        "1 — Помогать людям\n"
+        "2 — Креативность\n"
+        "3 — Доход\n"
+        "4 — Решать задачи\n"
+        "5 — Общение"
+    )
     return QUESTION3
 
-def question3(update: Update, context: CallbackContext) -> int:
-    update.message.reply_text("📦 Что тебе важнее в работе?\n1. Помогать людям\n2. Творчество\n3. Финансовая независимость\n4. Решать задачи\n5. Общение с людьми")
-    return RESULT
-
-# Подсчёт результатов
-def calculate_result(update: Update, context: CallbackContext) -> int:
-    answer = update.message.text.lower()
-    
-    if "1" in answer:
-        user_scores["med"] += 1
-    elif "2" in answer:
-        user_scores["art"] += 1
-    elif "3" in answer:
-        user_scores["biz"] += 1
-    elif "4" in answer:
-        user_scores["it"] += 1
-    elif "5" in answer:
-        user_scores["soc"] += 1
-
-    # Подсчитываем, какой тип профессии тебе больше подходит
-    top = max(user_scores, key=user_scores.get)
-
-    if top == "med":
-        result_text = "Ты подойдешь к профессиям в медицине, психологии или биотехнологиях."
-    elif top == "art":
-        result_text = "Ты креативный человек! Тебе подойдут профессии в дизайне, музыке, кино."
-    elif top == "biz":
-        result_text = "Ты ориентирован на результат и успех в бизнесе. Профессии в стартапах, маркетинге — твои!"
-    elif top == "it":
-        result_text = "Ты подходишь для работы в IT-сфере. Программирование, анализ данных — вот твоё!"
-    elif top == "soc":
-        result_text = "Тебе стоит попробовать себя в социальных профессиях, таких как педагогика, психология, HR."
-
-    update.message.reply_text(result_text)
+async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    result = get_result(update.effective_user.id)
+    await update.message.reply_text(result)
     return ConversationHandler.END
 
-# Основная функция для старта бота
-def main() -> None:
-    updater = Updater(TOKEN)
+def handle_answer(text, user_id):
+    if "1" in text:
+        user_scores[user_id]["med"] += 1
+    elif "2" in text:
+        user_scores[user_id]["art"] += 1
+    elif "3" in text:
+        user_scores[user_id]["biz"] += 1
+    elif "4" in text:
+        user_scores[user_id]["it"] += 1
+    elif "5" in text:
+        user_scores[user_id]["soc"] += 1
 
-    dispatcher = updater.dispatcher
+def get_result(user_id):
+    result_map = {
+        "med": "Тебе подойдут профессии в медицине, биологии, психологии 🧬",
+        "art": "Ты креативен! Попробуй себя в дизайне, искусстве, кино 🎨",
+        "biz": "Ты предприимчив(а). Стартапы, маркетинг, финансы — твой путь 💼",
+        "it": "Ты технарь! Программирование, AI, кибербезопасность — твоё 👾",
+        "soc": "Ты душа компании! Образование, HR, социология — попробуй 🗣️"
+    }
+    scores = user_scores[user_id]
+    top = max(scores, key=scores.get)
+    return result_map[top]
 
-    # Создаем обработчик для команд и сообщений
-    conversation_handler = ConversationHandler(
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            QUESTION1: [MessageHandler(Filters.text & ~Filters.command, question1)],
-            QUESTION2: [MessageHandler(Filters.text & ~Filters.command, question2)],
-            QUESTION3: [MessageHandler(Filters.text & ~Filters.command, question3)],
-            RESULT: [MessageHandler(Filters.text & ~Filters.command, calculate_result)],
+            QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, question1)],
+            QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, question2)],
+            QUESTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, question3)],
         },
         fallbacks=[],
     )
 
-    dispatcher.add_handler(conversation_handler)
+    app.add_handler(conv_handler)
 
-    # Запускаем бота
-    updater.start_polling()
-    updater.idle()
+    # Запуск через webhook (для Render)
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=f"https://{os.environ['RENDER_EXTERNAL_URL']}/webhook"
+    )
 
 if __name__ == '__main__':
     main()
