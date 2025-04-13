@@ -1,13 +1,12 @@
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
     MessageHandler,
     filters,
-    ConversationHandler,
-    CallbackQueryHandler
+    ConversationHandler
 )
 
 # Токен Telegram-бота (из переменной окружения)
@@ -77,43 +76,72 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_scores[user_id] = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
 
-    # Отправка первого вопроса с кнопками
-    keyboard = [
-        [InlineKeyboardButton(option["text"], callback_data=option["score"]) for option in questions[0]["options"]]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
+    # Отправка первого вопроса
     await update.message.reply_text(
         f"Привет, {update.effective_user.first_name}! 🎯 Пройди короткий тест, чтобы узнать, какая профессия тебе подходит!\n\n"
-        f"Вопрос 1: {questions[0]['q']}",
-        reply_markup=reply_markup
+        f"Вопрос 1: {questions[0]['q']}\n"
+        f"1 — {questions[0]['options'][0]['text']}\n"
+        f"2 — {questions[0]['options'][1]['text']}\n"
+        f"3 — {questions[0]['options'][2]['text']}\n"
+        f"4 — {questions[0]['options'][3]['text']}\n"
+        f"5 — {questions[0]['options'][4]['text']}"
     )
     return QUESTION1
 
-# Функции для обработки ответов через кнопки
-async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    score = query.data  # Получаем выбранное значение (score)
-    user_scores[user_id][score] += 1
+# Функции для обработки ответов
+async def question1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    await update.message.reply_text(
+        f"Вопрос 2: {questions[1]['q']}\n"
+        f"1 — {questions[1]['options'][0]['text']}\n"
+        f"2 — {questions[1]['options'][1]['text']}\n"
+        f"3 — {questions[1]['options'][2]['text']}\n"
+        f"4 — {questions[1]['options'][3]['text']}\n"
+        f"5 — {questions[1]['options'][4]['text']}"
+    )
+    return QUESTION2
 
-    # Переходим ко второму вопросу
-    next_question = len(user_scores[user_id]) - 1
-    if next_question < len(questions):
-        # Каждая кнопка в своей строке
-        keyboard = [
-            [InlineKeyboardButton(option["text"], callback_data=option["score"])]
-            for option in questions[next_question]["options"]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            text=f"Вопрос {next_question + 1}: {questions[next_question]['q']}",
-            reply_markup=reply_markup
-        )
-    else:
-        result = get_result(user_id)
-        await query.edit_message_text(text=result)
-        return ConversationHandler.END
+async def question2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    await update.message.reply_text(
+        f"Вопрос 3: {questions[2]['q']}\n"
+        f"1 — {questions[2]['options'][0]['text']}\n"
+        f"2 — {questions[2]['options'][1]['text']}\n"
+        f"3 — {questions[2]['options'][2]['text']}\n"
+        f"4 — {questions[2]['options'][3]['text']}\n"
+        f"5 — {questions[2]['options'][4]['text']}"
+    )
+    return QUESTION3
+
+async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    await update.message.reply_text(
+        f"Вопрос 4: {questions[3]['q']}\n"
+        f"1 — {questions[3]['options'][0]['text']}\n"
+        f"2 — {questions[3]['options'][1]['text']}\n"
+        f"3 — {questions[3]['options'][2]['text']}\n"
+        f"4 — {questions[3]['options'][3]['text']}\n"
+        f"5 — {questions[3]['options'][4]['text']}"
+    )
+    return QUESTION4
+
+async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id)
+    result = get_result(update.effective_user.id)
+    await update.message.reply_text(result)
+    return ConversationHandler.END
+
+# Обработка ответов пользователя
+def handle_answer(answer_text, user_id):
+    answer_map = {
+        "1": "med",
+        "2": "art",
+        "3": "biz",
+        "4": "it",
+        "5": "soc"
+    }
+    if answer_text in answer_map:
+        user_scores[user_id][answer_map[answer_text]] += 1
 
 # Функция для получения результата
 def get_result(user_id):
@@ -135,10 +163,10 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            QUESTION1: [CallbackQueryHandler(handle_answer)],
-            QUESTION2: [CallbackQueryHandler(handle_answer)],
-            QUESTION3: [CallbackQueryHandler(handle_answer)],
-            QUESTION4: [CallbackQueryHandler(handle_answer)],
+            QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, question1)],
+            QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, question2)],
+            QUESTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, question3)],
+            QUESTION4: [MessageHandler(filters.TEXT & ~filters.COMMAND, question4)],
         },
         fallbacks=[],
     )
