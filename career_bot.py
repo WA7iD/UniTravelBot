@@ -100,8 +100,10 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Переходим ко второму вопросу
     next_question = len(user_scores[user_id]) - 1
     if next_question < len(questions):
+        # Каждая кнопка в своей строке
         keyboard = [
-            [InlineKeyboardButton(option["text"], callback_data=option["score"]) for option in questions[next_question]["options"]]
+            [InlineKeyboardButton(option["text"], callback_data=option["score"])]
+            for option in questions[next_question]["options"]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
