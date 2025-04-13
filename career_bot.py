@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
 
 # Сюда вставь свой токен, который ты получишь у @BotFather
-TOKEN = 'YOUR_BOT_TOKEN'
+TOKEN = '7777026419:AAGWA10hBPZilWmNK7HU4xCT_LSFbsA78zk'
 
 # Состояния диалога
 START, QUESTION1, QUESTION2, QUESTION3, RESULT = range(5)
