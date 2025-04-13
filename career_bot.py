@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 PORT = int(os.environ.get('PORT', '8443'))
-TOKEN = os.environ.get("7777026419:AAGWA10hBPZilWmNK7HU4xCT_LSFbsA78zk")  # токен нужно задать как переменную окружения
+TOKEN = os.environ.get("TELEGRAM_TOKEN")  # токен нужно задать как переменную окружения
 
 # Этапы теста
 QUESTION1, QUESTION2, QUESTION3 = range(3)
