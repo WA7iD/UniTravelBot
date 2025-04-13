@@ -10,7 +10,15 @@ from telegram.ext import (
 )
 
 PORT = int(os.environ.get('PORT', '8443'))
-TOKEN = os.environ.get("TELEGRAM_TOKEN")  # токен нужно задать как переменную окружения
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")  # исправляем на правильное название переменной
+
+# Проверки на наличие токена и URL
+if not TOKEN:
+    raise ValueError("TELEGRAM_BOT_TOKEN is not found in environment variables.")
+    
+webhook_url = os.environ.get("WEBHOOK_URL")
+if not webhook_url:
+    raise ValueError("WEBHOOK_URL is not found in environment variables.")
 
 # Этапы теста
 QUESTION1, QUESTION2, QUESTION3 = range(3)
@@ -105,7 +113,7 @@ def main():
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        webhook_url=os.environ.get("WEBHOOK_URL")
+        webhook_url=webhook_url
     )
 
 if __name__ == '__main__':
