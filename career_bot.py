@@ -279,6 +279,8 @@ async def handle_test_completion(update, context):
     await select_region(update, context)
     
  # Переход к выбору региона
+async def handle_test_completion(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Переход к выбору региона
     await update.message.reply_text(
         "Теперь давай выберем регион, где ты хочешь учиться!\n"
         "Можешь начать с того, что тебе ближе по духу или просто интересен:"
@@ -289,7 +291,6 @@ async def handle_test_completion(update, context):
         "Выбери федеральный округ:",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
-
     return SELECT_REGION
 
 async def select_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
