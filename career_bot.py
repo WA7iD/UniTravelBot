@@ -268,19 +268,18 @@ def get_top_profile(user_id):
         return None
     return max(scores, key=scores.get)  # Получаем профиль с наибольшим баллом
 
-# Функция, которая вызывается после завершения теста
-async def handle_test_completion(update, context):
-    user_id = update.message.chat.id
-    
-    # Здесь предполагается, что у тебя уже есть профиль пользователя
-    user_profiles[user_id] = determined_profile
-
-    # Теперь вызываем функцию для выбора региона
-    await select_region(update, context)
-    
- # Переход к выбору региона
+# Завершение теста и переход к выбору региона
 async def handle_test_completion(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Переход к выбору региона
+    user_id = update.effective_user.id
+    profile = get_top_profile(user_id)
+
+    if not profile:
+        await update.message.reply_text("Не удалось определить профиль. Попробуй пройти тест ещё раз.")
+        return ConversationHandler.END
+
+    user_profiles[user_id] = profile  # сохраняем профиль пользователя
+
+    # Предлагаем выбрать регион
     await update.message.reply_text(
         "Теперь давай выберем регион, где ты хочешь учиться!\n"
         "Можешь начать с того, что тебе ближе по духу или просто интересен:"
@@ -291,6 +290,7 @@ async def handle_test_completion(update: Update, context: ContextTypes.DEFAULT_T
         "Выбери федеральный округ:",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
+
     return SELECT_REGION
 
 async def select_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
