@@ -1,4 +1,4 @@
-import os
+deimport os
 import logging
 from telegram import Update
 from telegram.ext import (
@@ -185,7 +185,28 @@ async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    handle_answer(update.message.text, user_id)
+    handle_answer(update.message.text, user_id)  # Обрабатываем ответ пользователя
+
+    # Показываем результат
+    result = get_result(user_id)
+    await update.message.reply_text(result)  # Отправляем результат пользователю
+
+    # Определяем профиль пользователя и сохраняем его
+    top_profile = get_top_profile(user_id)
+    user_profiles[user_id] = top_profile  # Сохраняем профиль пользователя в словарь
+
+    # Переход к выбору региона
+    await update.message.reply_text(
+        "Теперь давай выберем регион, где ты хочешь учиться!\n"
+        "Можешь начать с того, что тебе ближе по духу или просто интересен:"
+    )
+
+    reply_keyboard = [['ЦФО', 'ПФО'], ['ЮФО', 'СКФО']]  # Клавиатура для выбора региона
+    await update.message.reply_text(
+        "Выбери федеральный округ:",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
+return SELECT_REGION  # Переход к состоянию выбора региона
 
 # Обработка ответов
 def handle_answer(answer_text, user_id):
@@ -229,6 +250,13 @@ def get_result(user_id):
     top = max(scores, key=scores.get)
     return result_map.get(top, "Что-то пошло не так, попробуй ещё раз.")
 
+# Функция для определения лучшего профиля пользователя
+def get_top_profile(user_id):
+    scores = user_scores.get(user_id, {})
+    if not scores:
+        return None
+    return max(scores, key=scores.get)  # Получаем профиль с наибольшим баллом
+
 # Функция, которая вызывается после завершения теста
 async def handle_test_completion(update, context):
     user_id = update.message.chat.id
@@ -238,7 +266,7 @@ async def handle_test_completion(update, context):
 
     # Теперь вызываем функцию для выбора региона
     await select_region(update, context)
-
+    
  # Переход к выбору региона
     await update.message.reply_text(
         "Теперь давай выберем регион, где ты хочешь учиться!\n"
