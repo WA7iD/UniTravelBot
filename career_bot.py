@@ -128,7 +128,6 @@ async def question2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return QUESTION3
 
-> Jaily:
 async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     handle_answer(update.message.text, update.effective_user.id)
     await update.message.reply_text(
