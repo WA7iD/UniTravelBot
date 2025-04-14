@@ -280,6 +280,7 @@ def main():
         QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, question1)],
         QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, question2)],
         QUESTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, question3)],
+        QUESTION4: [MessageHandler(filters.TEXT & ~filters.COMMAND, question4)],
         SELECT_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_region)],
         SELECT_CITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_city)],
     },
