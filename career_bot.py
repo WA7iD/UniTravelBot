@@ -271,7 +271,7 @@ async def select_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-   conv_handler = ConversationHandler(
+    conv_handler = ConversationHandler(
     entry_points=[CommandHandler('start', start)],
     states={
         QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, question1)],
