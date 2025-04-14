@@ -72,28 +72,34 @@ questions = [
 ]
 
 # Стартовая функция
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user_scores[user_id] = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
+import logging
 
-    # Сначала создаём greeting_text
-greeting_text = (
-    f"Привет, {update.effective_user.first_name}! 🎯 Думал(а) о ВУЗе, в который будешь поступать, "
-    "а с городом решил(а)? Давай, мы тебя быстренько соориентируем😉 "
-    "Пройди для начала короткий тест, чтобы узнать, кем ты можешь быть во взрослом мире!\n\n"
-)
+logging.basicConfig(level=logging.INFO)
 
-# А теперь отправляем сообщение
-await update.message.reply_text(
-    greeting_text +
-    f"Вопрос 1: {questions[0]['q']}\n"
-    f"1 — {questions[0]['options'][0]['text']}\n"
-    f"2 — {questions[0]['options'][1]['text']}\n"
-    f"3 — {questions[0]['options'][2]['text']}\n"
-    f"4 — {questions[0]['options'][3]['text']}\n"
-    f"5 — {questions[0]['options'][4]['text']}"
-)
-return QUESTION1
+async def send_greeting(update, user_id):
+    try:
+        greeting_text = (
+            f"Привет, {update.effective_user.first_name}! 🎯 Думал(а) о ВУЗе, в который будешь поступать, "
+            "а с городом решил(а)? Давай, мы тебя быстренько соориентируем😉 "
+            "Пройди для начала короткий тест, чтобы узнать, кем ты можешь быть во взрослом мире!\n\n"
+        )
+
+        message_text = (
+            greeting_text +
+            f"Вопрос 1: {questions[0]['q']}\n"
+            f"1 — {questions[0]['options'][0]['text']}\n"
+            f"2 — {questions[0]['options'][1]['text']}\n"
+            f"3 — {questions[0]['options'][2]['text']}\n"
+            f"4 — {questions[0]['options'][3]['text']}\n"
+            f"5 — {questions[0]['options'][4]['text']}"
+        )
+
+        await update.message.reply_text(message_text)
+        return QUESTION1
+    except Exception as e:
+        logging.error(f"Error sending message: {e}")
+        raise
+
 
 # Функции для обработки ответов
 async def question1(update: Update, context: ContextTypes.DEFAULT_TYPE):
