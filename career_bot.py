@@ -1,4 +1,5 @@
 import os
+import logging
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -9,12 +10,15 @@ from telegram.ext import (
     ConversationHandler
 )
 
-# Токен Telegram-бота (из переменной окружения)
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+
+# Токен и настройки вебхука
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 PORT = int(os.environ.get('PORT', '8443'))
 webhook_url = os.environ.get("WEBHOOK_URL")
 
-# Проверка наличия токена и URL
+# Проверка переменных окружения
 if not TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN is not found in environment variables.")
 
@@ -24,10 +28,10 @@ if not webhook_url:
 # Этапы теста
 QUESTION1, QUESTION2, QUESTION3, QUESTION4 = range(4)
 
-# Пользовательские данные
+# Данные пользователя
 user_scores = {}
 
-# Вопросы и ответы
+# Вопросы
 questions = [
     {
         "q": "🔥 Как проводишь свободное время?",
@@ -71,11 +75,7 @@ questions = [
     }
 ]
 
-# Стартовая функция
-import logging
-
-logging.basicConfig(level=logging.INFO)
-
+# Приветствие
 async def send_greeting(update, user_id):
     try:
         greeting_text = (
@@ -97,11 +97,26 @@ async def send_greeting(update, user_id):
         await update.message.reply_text(message_text)
         return QUESTION1
     except Exception as e:
-        logging.error(f"Error sending message: {e}")
+        logging.error(f"Ошибка при отправке приветствия: {e}")
         raise
 
+# 🔹 Функция стартовой команды
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-# Функции для обработки ответов
+    # Инициализируем счётчики, если пользователь новый
+    if user_id not in user_scores:
+        user_scores[user_id] = {
+            "med": 0,
+            "art": 0,
+            "biz": 0,
+            "it": 0,
+            "soc": 0
+        }
+
+    return await send_greeting(update, user_id)
+
+# 🔹 Вопросы
 async def question1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     handle_answer(update.message.text, update.effective_user.id)
     await update.message.reply_text(
@@ -144,7 +159,7 @@ async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(result)
     return ConversationHandler.END
 
-# Обработка ответов пользователя
+# Обработка ответов
 def handle_answer(answer_text, user_id):
     answer_map = {
         "1": "med",
@@ -153,10 +168,20 @@ def handle_answer(answer_text, user_id):
         "4": "it",
         "5": "soc"
     }
+
+    if user_id not in user_scores:
+        user_scores[user_id] = {
+            "med": 0,
+            "art": 0,
+            "biz": 0,
+            "it": 0,
+            "soc": 0
+        }
+
     if answer_text in answer_map:
         user_scores[user_id][answer_map[answer_text]] += 1
 
-# Функция для получения результата
+# Получение результата
 def get_result(user_id):
     result_map = {
         "med": "👩‍⚕️ Тебе подойдёт медицина или психология!\nТы заботлив(а), внимателен(на) и умеешь слушать. Профессии: врач, психолог, биотехнолог, нутрициолог",
@@ -165,27 +190,18 @@ def get_result(user_id):
         "it": "💻 Айтишник в душе!\nТы точно найдёшь себя в программировании, аналитике или разработке игр",
         "soc": "🗣️ Коммуникатор и лидер))\nТы умеешь быть в центре команды. Педагогика, HR, менеджмент, соц. проекты — твоё поле"
     }
-    
-    # Проверяем, есть ли пользователь в user_scores
+
     if user_id not in user_scores:
         return "Упс, похоже, у нас нет твоих данных. Пройди тест и попробуй снова!"
 
     scores = user_scores[user_id]
-    
-    # Проверяем, что у пользователя есть хотя бы один балл
     if not scores:
         return "Ты не ответил(а) на вопросы. Пройди тест, чтобы получить результат!"
 
     top = max(scores, key=scores.get)
-    
-    # Если не найдено ни одного подходящего результата
-    if top not in result_map:
-        return "Что-то пошло не так, попробуй ещё раз."
+    return result_map.get(top, "Что-то пошло не так, попробуй ещё раз.")
 
-    return result_map[top]
-
-
-# Главная функция
+# Запуск бота
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -202,7 +218,6 @@ def main():
 
     app.add_handler(conv_handler)
 
-    # Запуск через webhook (для Render)
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
