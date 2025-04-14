@@ -195,18 +195,29 @@ async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
     top_profile = get_top_profile(user_id)
     user_profiles[user_id] = top_profile  # Сохраняем профиль пользователя в словарь
 
-    # Переход к выбору региона
+    # Переход к выбору региона после завершения теста
+    return await handle_test_completion(update, context)
+
+# Функция для завершения теста и перехода к следующему этапу
+async def handle_test_completion(update, context):
+    user_id = update.message.chat.id
+
+    # Здесь предполагается, что у тебя уже есть профиль пользователя
+    user_profiles[user_id] = determined_profile
+
+    # Теперь вызываем функцию для выбора региона
     await update.message.reply_text(
         "Теперь давай выберем регион, где ты хочешь учиться!\n"
         "Можешь начать с того, что тебе ближе по духу или просто интересен:"
     )
 
-    reply_keyboard = [['ЦФО', 'ПФО'], ['ЮФО', 'СКФО']]  # Клавиатура для выбора региона
+    reply_keyboard = [['ЦФО', 'ПФО'], ['ЮФО', 'СКФО']]
     await update.message.reply_text(
         "Выбери федеральный округ:",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
-return SELECT_REGION  # Переход к состоянию выбора региона
+
+    return SELECT_REGION  # Переход к следующему этапу
 
 # Обработка ответов
 def handle_answer(answer_text, user_id):
