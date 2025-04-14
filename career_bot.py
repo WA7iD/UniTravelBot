@@ -184,10 +184,8 @@ async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return QUESTION4
 
 async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    handle_answer(update.message.text, update.effective_user.id)
-    result = get_result(update.effective_user.id)
-    await update.message.reply_text(result)
-    return ConversationHandler.END
+    user_id = update.effective_user.id
+    handle_answer(update.message.text, user_id)
 
 # Обработка ответов
 def handle_answer(answer_text, user_id):
@@ -241,14 +239,19 @@ async def handle_test_completion(update, context):
     # Теперь вызываем функцию для выбора региона
     await select_region(update, context)
 
-# Функции для обработки выбора региона и города
-async def select_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_keyboard = [['ЦФО', 'ПФО', 'ЮФО']]
+ # Переход к выбору региона
+    await update.message.reply_text(
+        "Теперь давай выберем регион, где ты хочешь учиться!\n"
+        "Можешь начать с того, что тебе ближе по духу или просто интересен:"
+    )
+
+    reply_keyboard = [['ЦФО', 'ПФО'], ['ЮФО', 'СКФО']]
     await update.message.reply_text(
         "Выбери федеральный округ:",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
-    return SELECT_CITY
+
+    return SELECT_REGION
 
 async def select_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_region = update.message.text
