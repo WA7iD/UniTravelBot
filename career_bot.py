@@ -230,13 +230,16 @@ def get_result(user_id):
 
     top = max(scores, key=scores.get)
     return result_map.get(top, "Что-то пошло не так, попробуй ещё раз.")
-    
-# После того, как тест завершён, вызови функцию для выбора региона
-return await select_region(update, context)
 
-# Предположим, что после теста определён профиль пользователя
-user_profiles[user_id] = determined_profile
-return await select_region(update, context)
+# Функция, которая вызывается после завершения теста
+async def handle_test_completion(update, context):
+    user_id = update.message.chat.id
+    
+    # Здесь предполагается, что у тебя уже есть профиль пользователя
+    user_profiles[user_id] = determined_profile
+
+    # Теперь вызываем функцию для выбора региона
+    await select_region(update, context)
 
 # Функции для обработки выбора региона и города
 async def select_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
