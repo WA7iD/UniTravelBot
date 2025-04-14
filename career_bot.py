@@ -26,7 +26,7 @@ if not webhook_url:
     raise ValueError("WEBHOOK_URL is not found in environment variables.")
 
 # Этапы теста
-QUESTION1, QUESTION2, QUESTION3, QUESTION4 = range(4)
+(QUESTION1, QUESTION2, QUESTION3, SELECT_REGION, SELECT_CITY) = range(5)
 
 # Данные пользователя
 user_scores = {}
