@@ -1,11 +1,12 @@
 import os
 import logging
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     filters,
     ConversationHandler
 )
@@ -14,7 +15,7 @@ from telegram.ext import (
 city_data = {
     "Pyatigorsk": {
         "region": "North Caucasian Federal District",
-        "fields": ["Medicine", "Pedagogy", "Economics"],
+        "fields": ["med", "soc", "biz"],
         "description": "Pyatigorsk — a place where cool resorts meet medical career prospects! 😎✨ Here you can dive into health and psychology while breathing fresh mountain air. Top universities + chill vibes = a great career start. 🚀",
         "universities": [
             {"name": "PGMU", "fields": ["Medicine", "Pharmacy", "Health"]},
@@ -23,7 +24,7 @@ city_data = {
     },
     "Stavropol": {
         "region": "North Caucasian Federal District",
-        "fields": ["Medicine", "Pedagogy", "Law"],
+        "fields": ["med", "soc", "biz"],
         "description": "Stavropol — become not just a great lawyer, but also a leader in education and medicine! 🌱⚖️ Study and enjoy life here. Ecology, medical research, law — everything for growth. 💡",
         "universities": [
             {"name": "Stavropol State Agrarian University", "fields": ["Agronomy", "Tech", "Ecology"]},
@@ -32,7 +33,7 @@ city_data = {
     },
     "Rostov-on-Don": {
         "region": "Southern Federal District",
-        "fields": ["Medicine", "Pedagogy", "Sociology"],
+        "fields": ["med", "soc", "biz"],
         "description": "Rostov — not just a big southern city, but a vibrant metropolis! 🌞💥 You’ll find your niche in medicine, pedagogy, or sociology — with a splash of southern energy. Bonus: swim in rivers when exams aren’t near. 😉",
         "universities": [
             {"name": "SFU", "fields": ["Pedagogy", "Sociology", "Economics", "Business"]},
@@ -55,7 +56,7 @@ if not webhook_url:
     raise ValueError("WEBHOOK_URL is not found in environment variables.")
 
 # --------------------- Quiz States ---------------------
-(QUESTION1, QUESTION2, QUESTION3, SELECT_REGION) = range(4)
+(QUESTION1, QUESTION2, QUESTION3, QUESTION4, SELECT_REGION, SELECT_CITY) = range(6)
 
 # --------------------- User Data ---------------------
 user_scores = {}
@@ -105,14 +106,12 @@ questions = [
     }
 ]
 
-# --------------------- Helper Functions ---------------------
-def handle_answer(text, user_id):
+def handle_answer(text, user_id, question_index):
     try:
         score = int(text.strip())
-        if score < 1 or score > 5:
-            return
-        field = questions[len([v for v in user_scores[user_id].values() if v > 0])]["options"][score - 1]["field"]
-        user_scores[user_id][field] += 1
+        if 1 <= score <= 5:
+            field = questions[question_index]['options'][score - 1]['field']
+            user_scores[user_id][field] += 1
     except:
         pass
 
@@ -122,104 +121,103 @@ def get_top_profile(user_id):
         return None
     return max(scores, key=scores.get)
 
-# --------------------- Conversation Handlers ---------------------
-async def send_greeting(update, user_id):
-    greeting_text = (
-        f"Hello, {update.effective_user.first_name}! 🎯 Ready to explore your future career and the right university city? Let's go!\n\n"
-        "First, take a short quiz to find out which path fits you best!\n\n"
-    )
-    q = questions[0]
-    message_text = (
-        greeting_text +
-        f"Question 1: {q['q']}\n" +
-        "\n".join([f"{i+1} - {opt['text']}" for i, opt in enumerate(q['options'])])
-    )
-    await update.message.reply_text(message_text)
-    return QUESTION1
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in user_scores:
-        user_scores[user_id] = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
-    return await send_greeting(update, user_id)
+    user_scores[user_id] = {"med": 0, "art": 0, "biz": 0, "it": 0, "soc": 0}
+    await update.message.reply_text(f"Hello, {update.effective_user.first_name}! 🎯 Ready to discover your future career path?\nLet's begin with a quick quiz!\n")
+    return await send_question(update, 0)
+
+async def send_question(update: Update, index):
+    q = questions[index]
+    text = f"Question {index + 1}: {q['q']}\n" + "\n".join([f"{i+1} - {opt['text']}" for i, opt in enumerate(q['options'])])
+    await update.message.reply_text(text)
+    return [QUESTION1, QUESTION2, QUESTION3, QUESTION4][index]
 
 async def question1(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    handle_answer(update.message.text, update.effective_user.id)
-    q = questions[1]
-    await update.message.reply_text(
-        f"Question 2: {q['q']}\n" + "\n".join([f"{i+1} - {opt['text']}" for i, opt in enumerate(q['options'])])
-    )
-    return QUESTION2
+    handle_answer(update.message.text, update.effective_user.id, 0)
+    return await send_question(update, 1)
 
 async def question2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    handle_answer(update.message.text, update.effective_user.id)
-    q = questions[2]
-    await update.message.reply_text(
-        f"Question 3: {q['q']}\n" + "\n".join([f"{i+1} - {opt['text']}" for i, opt in enumerate(q['options'])])
-    )
-    return QUESTION3
+    handle_answer(update.message.text, update.effective_user.id, 1)
+    return await send_question(update, 2)
 
 async def question3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    handle_answer(update.message.text, update.effective_user.id)
-    q = questions[3]
+    handle_answer(update.message.text, update.effective_user.id, 2)
+    return await send_question(update, 3)
+
+async def question4(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    handle_answer(update.message.text, update.effective_user.id, 3)
+    profile = get_top_profile(update.effective_user.id)
+    user_profiles[update.effective_user.id] = profile
+
+    messages = {
+        "med": "You’re a natural fit for medicine, biology, or psychology 🧬",
+        "it": "You’d thrive in tech, programming, and all things digital 💻",
+        "soc": "You shine in education, communication, or social work 🧑‍🏫",
+        "biz": "Business, leadership, and finance are your strong suits 📈",
+        "art": "Your creativity belongs in art, design, or media 🎨"
+    }
+
+    await update.message.reply_text(messages.get(profile, "Interesting mix!"))
+
+    keyboard = [[InlineKeyboardButton("Southern Federal District", callback_data="Southern Federal District")],
+                [InlineKeyboardButton("North Caucasian Federal District", callback_data="North Caucasian Federal District")]]
+
     await update.message.reply_text(
-        f"Question 4: {q['q']}\n" + "\n".join([f"{i+1} - {opt['text']}" for i, opt in enumerate(q['options'])])
+        "Now let's choose a place where you want to study!\nYou can start with what is closer to you in spirit or simply interesting:\nFirstly, select a federal district:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
     return SELECT_REGION
 
 async def select_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    selected_region = update.message.text
-    user_id = update.effective_user.id
-    profile = get_top_profile(user_id)
+    query = update.callback_query
+    await query.answer()
+    region = query.data
+    user_id = query.from_user.id
+    profile = user_profiles[user_id]
 
-    if not profile:
-        await update.message.reply_text("Couldn’t determine your profile. Please try again.")
-        return ConversationHandler.END
+    matching_cities = [city for city, info in city_data.items() if info['region'] == region and profile in info['fields']]
 
-    user_profiles[user_id] = profile
-    await update.message.reply_text(
-        "Now choose a federal district you’d like to study in:\nOptions:",
-        reply_markup=ReplyKeyboardMarkup(
-            [['Central', 'Volga'], ['Southern', 'North Caucasian']],
-            one_time_keyboard=True, resize_keyboard=True
+    buttons = [[InlineKeyboardButton(city, callback_data=f"CITY_{city}")] for city in matching_cities]
+    await query.message.reply_text("We can offer you to get acquainted with the following cities:",
+                                   reply_markup=InlineKeyboardMarkup(buttons))
+    return SELECT_CITY
+
+async def select_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    city = query.data.replace("CITY_", "")
+    data = city_data.get(city)
+
+    if data:
+        text = f"{city}: {data['description']}\nUniversities: {', '.join([u['name'] for u in data['universities']])}"
+        await query.message.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Click to find out more", callback_data="END", disabled=True)]
+            ])
         )
-    )
-    return SELECT_REGION
-
-async def handle_final_city_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    selected_region = update.message.text
-    user_id = update.effective_user.id
-    profile = user_profiles.get(user_id)
-
-    matching_cities = [
-        city for city, info in city_data.items()
-        if info["region"] == selected_region and profile in info["fields"]
-    ]
-
-    if matching_cities:
-        reply = "Cities matching your profile in selected region:\n"
-        for city in matching_cities:
-            info = city_data[city]
-            reply += f"\n{city}: {info['description']}\nUniversities: {', '.join([v['name'] for v in info['universities']])}\n"
-        await update.message.reply_text(reply)
-    else:
-        await update.message.reply_text("Unfortunately, no matching cities found in this region.")
 
     return ConversationHandler.END
+
+async def fallback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Please start with /start to begin the quiz.")
 
 # --------------------- Run Bot ---------------------
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[CommandHandler("start", start)],
         states={
             QUESTION1: [MessageHandler(filters.TEXT & ~filters.COMMAND, question1)],
             QUESTION2: [MessageHandler(filters.TEXT & ~filters.COMMAND, question2)],
             QUESTION3: [MessageHandler(filters.TEXT & ~filters.COMMAND, question3)],
-            SELECT_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_final_city_response)],
+            QUESTION4: [MessageHandler(filters.TEXT & ~filters.COMMAND, question4)],
+            SELECT_REGION: [CallbackQueryHandler(select_region)],
+            SELECT_CITY: [CallbackQueryHandler(select_city)]
         },
-        fallbacks=[]
+        fallbacks=[MessageHandler(filters.ALL, fallback_handler)]
     )
 
     app.add_handler(conv_handler)
